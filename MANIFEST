@@ -1,0 +1,11 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/Imager/SkinDetector.pm
+examples/is_skinny.pl
+examples/ferrari.bmp
+examples/ferrari.png
+examples/model.bmp
+examples/model.png
+t/00-load.t
