@@ -6,7 +6,7 @@ use strict;
 use Carp q(croak);
 use base q(Imager);
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub new {
     my ($class, %opt) = @_;
@@ -26,6 +26,47 @@ sub new {
     }
 
     bless $self, $class;
+}
+
+sub hue_frequencies {
+    my ($img) = @_;
+
+    return unless $img;
+
+    my $width  = $img->getwidth() - 1;
+    my $height = $img->getheight() - 1;
+    my @frequency = (0) x 36;
+    my ($r, $g, $b,    $h, $s, $v);
+    my $color;
+    my $color_interval;
+    my $total = 0;
+
+    # Sample the image and check pixel colors
+    for (my $x = 0; $x < $width; $x += 5) {
+
+        for (my $y = 0; $y < $height; $y += 5) {
+
+            next unless $color = $img->getpixel(x => $x, y => $y);
+
+            ($r, $g, $b) = $color->rgba();
+            ($h, $s, $v) = rgb2hsv($r, $g, $b);
+
+            $color_interval = int ($h / 10);
+            $frequency[$color_interval]++;
+            $total++;
+        }
+    }
+
+    # Normalize frequencies, removing spurious results
+    if (! $total) {
+        return;
+    }
+
+    for my $value (@frequency) {
+        $value /= $total;
+    }
+
+    return @frequency;
 }
 
 sub minmax {
@@ -113,12 +154,16 @@ sub skinniness {
     my $total_samples = 0;
     my $color;
 
+    # Sample the image and check pixel colors
     for (my $x = 0; $x < $width; $x += 10) {
         for (my $y = 0; $y < $height; $y += 10) {
+
             $color = $img->getpixel(x => $x, y => $y);
+
             if ($color && is_skin($color)) {
                 $skin_colors++;
             }
+
             $total_samples++;
         }
     }
@@ -136,11 +181,7 @@ __END__
 
 =head1 NAME
 
-Imager::SkinDetector - The great new Imager::SkinDetector!
-
-=head1 VERSION
-
-Version 0.01
+Imager::SkinDetector - Try to detect skin tones and nudity in images
 
 =head1 SYNOPSIS
 
@@ -175,6 +216,26 @@ Feel free to provide feedback and code.
 
 =head1 FUNCTIONS
 
+=head2 C<hue_frequencies()>
+
+Examines the image and outputs a list of relative frequencies
+for color hues in the picture.
+
+Now it outputs 36 values, corresponding to 36 intervals
+in the entire spectrum, conventionally ranged from 0 to 360,
+where first interval corresponds to red.
+
+The relation between hue and number is approximately as follows:
+
+    Hue value   Color
+    ----------------------
+    0 - 60	    red
+    60 - 120	yellow
+    120 - 180	green
+    180 - 240	cyan
+    240 - 300   blue
+    300 - 360   magenta
+
 =head2 C<is_skin($color)>
 
 Examines an C<Imager::Color> object and tells you if it
@@ -186,7 +247,7 @@ And it only detects "white" skin colors for now. Sorry.
 Example:
 
     my $color = Imager::Color->new(0, 255, 255);
-    if (Imager::SkinDetector::is_color($color)) {
+    if (Imager::SkinDetector::is_skin($color)) {
         print 'Yes, it seems to be skinny';
     } else {
         print 'Mmhhh, probably not';
