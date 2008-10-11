@@ -9,7 +9,7 @@
 # Example:
 #   perl hue_frequencies.pl ferrari.png
 #
-# $Id: $
+# $Id$
 
 use strict;
 use Imager::SkinDetector;
