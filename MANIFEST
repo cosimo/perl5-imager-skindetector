@@ -3,9 +3,11 @@ MANIFEST
 Makefile.PL
 README
 lib/Imager/SkinDetector.pm
+examples/hue_frequencies.pl
 examples/is_skinny.pl
 examples/ferrari.bmp
 examples/ferrari.png
 examples/model.bmp
 examples/model.png
 t/00-load.t
+META.yml                                 Module meta-data (added by MakeMaker)
