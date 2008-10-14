@@ -3,6 +3,7 @@ MANIFEST
 Makefile.PL
 README
 lib/Imager/SkinDetector.pm
+examples/contains_nudity.pl
 examples/hue_frequencies.pl
 examples/is_skinny.pl
 examples/ferrari.bmp
