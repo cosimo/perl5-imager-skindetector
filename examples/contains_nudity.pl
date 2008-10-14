@@ -10,7 +10,7 @@
 # Example:
 #   perl contains_nudity.pl ferrari.png
 #
-# $Id: is_skinny.pl 117 2008-10-11 12:09:21Z Cosimo $
+# $Id$
 
 use strict;
 use Imager::SkinDetector;
