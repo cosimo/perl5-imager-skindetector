@@ -6,7 +6,7 @@ use strict;
 use Carp q(croak);
 use base q(Imager);
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub new {
     my ($class, %opt) = @_;
@@ -26,6 +26,22 @@ sub new {
     }
 
     bless $self, $class;
+}
+
+# A rough estimate, based on all other meaningful factors
+sub contains_nudity {
+    my ($img) = @_;
+
+    # All factors should have range (0..1)
+    my $skinniness = $img->skinniness();
+    my $coloriness = $img->has_different_colors() || 0.0001;
+
+    # Apply gaussian function to $coloriness
+    $coloriness = exp(-(($coloriness - 3)**2 / 30));
+
+    my $nudity_factor = $skinniness * $coloriness;
+
+    return $nudity_factor;
 }
 
 sub hue_frequencies {
@@ -142,6 +158,24 @@ sub is_skin {
     return 0;
 }
 
+sub has_different_colors {
+    my ($img) = @_;
+
+    # Filter out colors with <= 3%
+    my $value_threshold = 0.04;
+
+    # Extract hue histogram
+    my @freq = $img->hue_frequencies();
+
+    my $distinct = 0;
+    for (@freq) {
+        ++$distinct if $_ > $value_threshold;
+    }
+
+    # 36 is total possible different hue intervals
+    return $distinct / 36;
+}
+
 sub skinniness {
     my ($img) = @_;
 
@@ -216,26 +250,6 @@ Feel free to provide feedback and code.
 
 =head1 FUNCTIONS
 
-=head2 C<hue_frequencies()>
-
-Examines the image and outputs a list of relative frequencies
-for color hues in the picture.
-
-Now it outputs 36 values, corresponding to 36 intervals
-in the entire spectrum, conventionally ranged from 0 to 360,
-where first interval corresponds to red.
-
-The relation between hue and number is approximately as follows:
-
-    Hue value   Color
-    ----------------------
-    0 - 60	    red
-    60 - 120	yellow
-    120 - 180	green
-    180 - 240	cyan
-    240 - 300   blue
-    300 - 360   magenta
-
 =head2 C<is_skin($color)>
 
 Examines an C<Imager::Color> object and tells you if it
@@ -266,6 +280,40 @@ Example:
     my @hsv = Imager::SkinDetector::rgb2hsv(@rgb);
 
 =head1 METHODS
+
+=head2 C<contains_nudity()>
+
+Tries to detect if image contains nudity,
+by using all available methods, like C<hue_frequencies()>
+and C<skinniness()>.
+
+Returns a real value between 0 and 1.
+
+The algorithm is basically crap, so I would be seriously
+surprised if it works even for a small percentage of the
+images you throw at it.
+
+Anyway, feel free to send me interesting test cases :-)
+
+=head2 C<hue_frequencies()>
+
+Examines the image and returns a list of 36 relative frequencies
+for color hues in the picture.
+
+Now it outputs 36 values, corresponding to 36 intervals
+in the entire spectrum, conventionally ranged from 0 to 360,
+where first interval corresponds to red.
+
+The relation between hue and number is approximately as follows:
+
+    Hue value   Color
+    ----------------------
+    0 - 60	    red
+    60 - 120	yellow
+    120 - 180	green
+    180 - 240	cyan
+    240 - 300   blue
+    300 - 360   magenta
 
 =head2 C<skinniness()>
 
