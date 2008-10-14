@@ -27,3 +27,6 @@ for (@freq) {
     printf "Interval n. %d\tValue: %.3f%%\n", ++$n, 100*$_;
 }
 
+print "Has different colors: ", $img->has_different_colors(), "\n";
+
+
