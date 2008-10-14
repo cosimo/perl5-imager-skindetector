@@ -37,7 +37,7 @@ sub contains_nudity {
     my $coloriness = $img->has_different_colors() || 0.0001;
 
     # Apply gaussian function to $coloriness
-    $coloriness = exp(-(($coloriness - 3)**2 / 30));
+    $coloriness = exp(-(($coloriness - 0.2)**2 / 20));
 
     my $nudity_factor = $skinniness * $coloriness;
 
