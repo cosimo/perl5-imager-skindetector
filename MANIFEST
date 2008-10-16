@@ -7,8 +7,7 @@ examples/contains_nudity.pl
 examples/hue_frequencies.pl
 examples/is_skinny.pl
 examples/ferrari.bmp
-examples/ferrari.png
+examples/woman.bmp
 examples/model.bmp
-examples/model.png
 t/00-load.t
 META.yml                                 Module meta-data (added by MakeMaker)
