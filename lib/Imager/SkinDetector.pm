@@ -36,7 +36,19 @@ sub contains_nudity {
     my $skinniness = $img->skinniness();
     my $coloriness = $img->has_different_colors() || 0.0001;
 
-    # Apply gaussian function to $coloriness
+    # Apply gaussian function to $coloriness.
+
+    # We assume that 0.2 (7 distinct color hues, 0.2*36)
+    # is the center and maximum of our gaussian curve,
+    # rapidly decreasing to zero for values lower and higher
+    # than 7.
+
+    # If the image has a color histogram with many different
+    # hue intervals (max=36) then it's unlikely it contains nudity.
+    # Same goes for images with 1 or 2 distinct color hues.
+
+    # See: http://en.wikipedia.org/wiki/Gaussian_function
+
     $coloriness = exp(-(($coloriness - 0.2)**2 / 20));
 
     my $nudity_factor = $skinniness * $coloriness;
@@ -221,14 +233,17 @@ Imager::SkinDetector - Try to detect skin tones and nudity in images
 
     use Imager::SkinDetector;
 
+    # Use whatever format your Imager supports
     my $name = 'mypic.png';
 
     my $image = Imager::SkinDetector->new(file => $name)
         or die "Can't load image [$name]\n";
 
     my $skinniness = $image->skinniness();
-
     printf "Image is %3.2f%% skinny\n", $skinniness * 100;
+
+    my $prob = $image->contains_nudity();
+    printf "Contains nudity with a %.2f%% probability\n", $prob * 100;
 
 =head1 DESCRIPTION
 
@@ -285,7 +300,8 @@ Example:
 
 Tries to detect if image contains nudity,
 by using all available methods, like C<hue_frequencies()>
-and C<skinniness()>.
+and C<skinniness()>, and trying to combine their results
+into something reasonable.
 
 Returns a real value between 0 and 1.
 
