@@ -6,6 +6,7 @@ lib/Imager/SkinDetector.pm
 examples/contains_nudity.pl
 examples/hue_frequencies.pl
 examples/is_skinny.pl
+examples/fractal.gif
 examples/ferrari.bmp
 examples/woman.bmp
 examples/model.bmp
