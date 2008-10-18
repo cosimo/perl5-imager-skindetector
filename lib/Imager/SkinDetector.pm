@@ -1,12 +1,14 @@
+# vim: ts=4 sw=4 tw=0 et
 # $Id$
 
 package Imager::SkinDetector;
 
 use strict;
 use Carp q(croak);
+use File::Temp ();
 use base q(Imager);
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 sub new {
     my ($class, %opt) = @_;
@@ -14,12 +16,19 @@ sub new {
     return unless %opt;
 
     my $file = $opt{file};
-    if (! defined $file) {
+    my $url  = $opt{url};
+
+    if (! defined $file && ! defined $url) {
         return;
     }
 
     $class = ref($class) || $class;
     my $self = Imager->new();
+
+    # If url, download it and open a temp file
+    if (defined $url && $url =~ m{^https?://}) {
+        $file = _download_temp_file($url);
+    }
 
     if (! $self->open(file=>$file)) {
         croak $self->errstr();
@@ -54,6 +63,29 @@ sub contains_nudity {
     my $nudity_factor = $skinniness * $coloriness;
 
     return $nudity_factor;
+}
+
+# Make a HTTP request and save it as temporary file
+sub _download_temp_file {
+    my ($url) = @_;
+
+    eval { require LWP::Simple };
+    if ($@) {
+        croak "Can't download URL $url without LWP";
+    }
+
+    my $pic = LWP::Simple::get($url);
+    if (! $pic) {
+        croak "Failed to load image at URL $url";
+    }
+
+    my $tmpf = File::Temp->new( UNLINK => 0 );
+    my $file_name = $tmpf->filename();
+    binmode $tmpf;
+    print $tmpf $pic;
+    close $tmpf;
+
+    return $file_name;
 }
 
 sub hue_frequencies {
@@ -170,6 +202,63 @@ sub is_skin {
     return 0;
 }
 
+sub is_fuzzy {
+    my ($img) = @_;
+
+    return unless $img;
+
+    my $width  = $img->getwidth() - 1;
+    my $height = $img->getheight() - 1;
+
+    my $differences = 0;
+    my $total_samples = 0;
+    my ($r, $g, $b);
+
+    # Sample first pixel
+    my $color = $img->getpixel(x=>0, y=>0);
+    my($r2, $g2, $b2, undef) = $color->rgba();
+    my $pixel_diff = 0;
+    my $pixel_diff_threshold = 40;
+
+    # Sample the image and check how much "variance"
+    # there is between pixels
+    for (my $x = 5; $x < $width - 5; $x += 1) {
+
+        for (my $y = 5; $y < $height - 5; $y += 1) {
+
+            $color = $img->getpixel(x => $x, y => $y);
+            ($r, $g, $b, undef) = $color->rgba();
+
+            if ($r < 5 && $g < 5 && $b < 5) {
+                next
+            }
+
+            $pixel_diff  = abs($r2 - $r);
+            $pixel_diff += abs($g2 - $g);
+            $pixel_diff += abs($b2 - $b);
+
+            if ($pixel_diff > $pixel_diff_threshold) {
+                $differences += $pixel_diff;
+            }
+
+            $r2 = $r;
+            $g2 = $g;
+            $b2 = $b;
+
+            $total_samples++;
+        }
+
+    }
+
+    if ($total_samples == 0) {
+        return
+    }
+
+    $differences = $differences / $total_samples;
+
+    return $differences;
+}
+
 sub has_different_colors {
     my ($img) = @_;
 
@@ -236,8 +325,13 @@ Imager::SkinDetector - Try to detect skin tones and nudity in images
     # Use whatever format your Imager supports
     my $name = 'mypic.png';
 
+    # Check a local file
     my $image = Imager::SkinDetector->new(file => $name)
         or die "Can't load image [$name]\n";
+
+    # ... or download a remote picture via HTTP
+    my $image = Imager::SkinDetector->new(url => 'http://some.server/some.pic')
+        or die "Can't load image!\n";
 
     my $skinniness = $image->skinniness();
     printf "Image is %3.2f%% skinny\n", $skinniness * 100;
@@ -331,6 +425,21 @@ The relation between hue and number is approximately as follows:
     240 - 300   blue
     300 - 360   magenta
 
+=head2 C<is_fuzzy()>
+
+Return a floating point value that tries to represent
+how "fuzzy" your image is. The higher the number, the
+"fuzzier" the image.
+
+I don't know how to explain what I mean by "fuzzy", but
+probably an example can:
+
+http://search.cpan.org/src/COSIMO/Imager-SkinDetector-0.05/examples/fractal.gif
+
+While this other one has a very low "fuzzy" factor:
+
+http://search.cpan.org/src/COSIMO/Imager-SkinDetector-0.05/examples/sand.jpg
+
 =head2 C<skinniness()>
 
 Returns a real value from 0 to 1, indicating how much skin
@@ -388,9 +497,6 @@ L<http://cpanratings.perl.org/d/Imager-SkinDetector>
 L<http://search.cpan.org/dist/Imager-SkinDetector>
 
 =back
-
-
-=head1 ACKNOWLEDGEMENTS
 
 
 =head1 COPYRIGHT & LICENSE

@@ -10,7 +10,8 @@ WriteMakefile(
     PL_FILES            => {},
     PREREQ_PM => {
         'Test::More' => 0, 
-        'Imager'     => 0,  # Check version
+        'Imager'     => 0,
+        'File::Temp' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Imager-SkinDetector-*' },
